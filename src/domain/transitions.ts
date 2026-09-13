@@ -1,0 +1,71 @@
+export type RunState =
+  | "CREATED"
+  | "INSPECTING"
+  | "MISMATCH_FOUND"
+  | "NO_MISMATCH"
+  | "APPROVAL_PENDING"
+  | "APPROVED"
+  | "RECOVERING"
+  | "VERIFYING"
+  | "VERIFIED"
+  | "MANUAL_REVIEW"
+  | "INSPECTION_FAILED"
+  | "APPROVAL_DENIED"
+  | "PLAN_EXPIRED"
+  | "RECOVERY_PARTIAL"
+  | "VERIFICATION_FAILED";
+
+export type RunEvent =
+  | "START_INSPECTION"
+  | "MISMATCHES_FOUND"
+  | "NO_MISMATCH"
+  | "REQUEST_APPROVAL"
+  | "APPROVE"
+  | "DENY_APPROVAL"
+  | "EXPIRE_PLAN"
+  | "START_RECOVERY"
+  | "PARTIAL_RECOVERY"
+  | "START_VERIFICATION"
+  | "VERIFY"
+  | "VERIFICATION_FAILED"
+  | "MANUAL_REVIEW"
+  | "INSPECTION_FAILED";
+
+const transitions: Readonly<Record<RunState, Readonly<Partial<Record<RunEvent, RunState>>>>> = {
+  CREATED: { START_INSPECTION: "INSPECTING" },
+  INSPECTING: {
+    MISMATCHES_FOUND: "MISMATCH_FOUND",
+    NO_MISMATCH: "NO_MISMATCH",
+    MANUAL_REVIEW: "MANUAL_REVIEW",
+    INSPECTION_FAILED: "INSPECTION_FAILED",
+  },
+  MISMATCH_FOUND: { REQUEST_APPROVAL: "APPROVAL_PENDING" },
+  NO_MISMATCH: {},
+  APPROVAL_PENDING: {
+    APPROVE: "APPROVED",
+    DENY_APPROVAL: "APPROVAL_DENIED",
+    EXPIRE_PLAN: "PLAN_EXPIRED",
+  },
+  APPROVED: { START_RECOVERY: "RECOVERING" },
+  RECOVERING: {
+    PARTIAL_RECOVERY: "RECOVERY_PARTIAL",
+    START_VERIFICATION: "VERIFYING",
+  },
+  VERIFYING: {
+    VERIFY: "VERIFIED",
+    VERIFICATION_FAILED: "VERIFICATION_FAILED",
+  },
+  VERIFIED: {},
+  MANUAL_REVIEW: {},
+  INSPECTION_FAILED: {},
+  APPROVAL_DENIED: {},
+  PLAN_EXPIRED: {},
+  RECOVERY_PARTIAL: {},
+  VERIFICATION_FAILED: {},
+};
+
+export function transitionRun(state: RunState, event: RunEvent): RunState {
+  const next = transitions[state][event];
+  if (!next) throw new Error(`Illegal run transition: ${state} + ${event}`);
+  return next;
+}
