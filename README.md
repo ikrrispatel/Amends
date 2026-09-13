@@ -161,12 +161,12 @@ npm run security:secrets
 
 Current verified status for this revision:
 
-- 50 tests
-- 50 pass
+- 53 tests
+- 53 pass
 - 0 fail
 - 0 skipped
 
-The security scan is intentionally strict and will flag secrets in a local `.env.local` file; that is expected in this repo workflow and is not a code regression.
+Local `.env.local` files are Git-ignored and excluded from the secret scanner; committed source, configuration, documentation, and example environment files remain scanned.
 
 ## Repository structure
 
