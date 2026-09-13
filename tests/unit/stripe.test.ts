@@ -9,9 +9,16 @@ import { createSyntheticStripeClient } from "../../src/integrations/stripe-demo.
 
 const config = {
   secretKey: "sk_test_demo123",
-  northstarCustomerId: "cus_northstar",
-  northstarSubscriptionId: "sub_northstar",
-  grandfatheredPriceId: "price_grandfathered",
+  customers: {
+    northstar: {
+      alias: "northstar",
+      customerId: "cus_northstar",
+      subscriptionId: "sub_northstar",
+      grandfatheredPriceId: "price_grandfathered",
+      grandfatheredUnitAmount: 9900,
+      quantity: 87,
+    },
+  },
 } as const;
 
 const wrongSnapshot: StripeSubscriptionSnapshot = {
@@ -42,10 +49,7 @@ describe("StripeAdapter", () => {
   it("rejects live-mode keys before a client call", () => {
     expect(
       () =>
-        new StripeAdapter(
-          { ...config, secretKey: "sk_live_do_not_use" },
-          client(),
-        ),
+        new StripeAdapter({ ...config, secretKey: "sk_live_do_not_use" }, client()),
     ).toThrowError(new StripeAdapterError("LIVE_KEY_REJECTED", "Stripe mutations require a test-mode secret key."));
   });
 
@@ -54,6 +58,7 @@ describe("StripeAdapter", () => {
     const adapter = new StripeAdapter(config, client({ updateSubscription }));
 
     const result = await adapter.restoreGrandfatheredPrice(
+      "northstar",
       wrongSnapshot,
       "run_demo_stripe_restore_001",
     );
@@ -77,7 +82,7 @@ describe("StripeAdapter", () => {
     );
 
     await expect(
-      adapter.restoreGrandfatheredPrice(wrongSnapshot, "run_demo_stripe_restore_002"),
+      adapter.restoreGrandfatheredPrice("northstar", wrongSnapshot, "run_demo_stripe_restore_002"),
     ).rejects.toMatchObject({ code: "PRECONDITION_FAILED" });
   });
 
@@ -92,6 +97,7 @@ describe("StripeAdapter", () => {
     );
 
     const result = await adapter.restoreGrandfatheredPrice(
+      "northstar",
       restoredSnapshot,
       "run_demo_stripe_restore_003",
     );
@@ -101,16 +107,37 @@ describe("StripeAdapter", () => {
   });
 
   it("supports a deterministic local wrong-state fixture", async () => {
-    const synthetic = createSyntheticStripeClient("wrong");
+    const synthetic = createSyntheticStripeClient();
     const adapter = new StripeAdapter(config, synthetic);
-    const wrong = await adapter.readNorthstar();
+    const wrong = await adapter.readCustomer("northstar");
 
-    await adapter.restoreGrandfatheredPrice(wrong, "run_demo_stripe_restore_004");
-    const restored = await adapter.readNorthstar();
+    await adapter.restoreGrandfatheredPrice("northstar", wrong, "run_demo_stripe_restore_004");
+    const restored = await adapter.readCustomer("northstar");
 
     expect(wrong.unitAmount).toBe(12900);
     expect(restored.unitAmount).toBe(9900);
     expect(restored.quantity).toBe(87);
     expect(synthetic.getUpdateCount()).toBe(1);
+  });
+
+  it("supports more than one configured customer", async () => {
+    const second = {
+      alias: "acme",
+      customerId: "cus_acme",
+      subscriptionId: "sub_acme",
+      grandfatheredPriceId: "price_acme_old",
+      grandfatheredUnitAmount: 9900,
+      quantity: 12,
+    } as const;
+    const adapter = new StripeAdapter(
+      { ...config, customers: { ...config.customers, acme: second } },
+      client({
+        retrieveSubscription: vi.fn(async (id) => id === "sub_acme" ? { ...wrongSnapshot, customerId: "cus_acme", subscriptionId: "sub_acme", quantity: 12 } : wrongSnapshot),
+      }),
+    );
+
+    const snapshot = await adapter.readCustomer("acme");
+    expect(snapshot.customerId).toBe("cus_acme");
+    expect(snapshot.quantity).toBe(12);
   });
 });
