@@ -15,7 +15,7 @@ function formatDollars(cents: number): string {
 
 export function MismatchTable({ mismatches, exposureCents }: MismatchTableProps) {
   return (
-    <section className="template-card rounded-2xl border border-red-200 bg-white shadow-sm" aria-labelledby="mismatch-heading">
+    <section className="template-card reveal-on-scroll rounded-2xl border border-red-200 bg-white shadow-sm" aria-labelledby="mismatch-heading">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-red-100 bg-red-50 px-5 py-4">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-red-700">Business impact</p>

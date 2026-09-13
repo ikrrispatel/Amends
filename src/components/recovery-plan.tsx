@@ -14,7 +14,7 @@ interface RecoveryPlanProps {
 
 export function RecoveryPlan({ actions, expiresAt, runCode }: RecoveryPlanProps) {
   return (
-    <section className="template-card rounded-2xl border border-slate-200 bg-white p-5 shadow-sm" aria-labelledby="recovery-heading">
+    <section className="template-card reveal-on-scroll rounded-2xl border border-slate-200 bg-white p-5 shadow-sm" aria-labelledby="recovery-heading">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Allowlisted plan</p>
