@@ -5,6 +5,7 @@ import {
   type StripeSubscriptionSnapshot,
   type StripeTestClient,
 } from "../../src/integrations/stripe.js";
+import { createSyntheticStripeClient } from "../../src/integrations/stripe-demo.js";
 
 const config = {
   secretKey: "sk_test_demo123",
@@ -97,5 +98,19 @@ describe("StripeAdapter", () => {
 
     expect(result.status).toBe("ALREADY_COMMITTED");
     expect(updateSubscription).not.toHaveBeenCalled();
+  });
+
+  it("supports a deterministic local wrong-state fixture", async () => {
+    const synthetic = createSyntheticStripeClient("wrong");
+    const adapter = new StripeAdapter(config, synthetic);
+    const wrong = await adapter.readNorthstar();
+
+    await adapter.restoreGrandfatheredPrice(wrong, "run_demo_stripe_restore_004");
+    const restored = await adapter.readNorthstar();
+
+    expect(wrong.unitAmount).toBe(12900);
+    expect(restored.unitAmount).toBe(9900);
+    expect(restored.quantity).toBe(87);
+    expect(synthetic.getUpdateCount()).toBe(1);
   });
 });
