@@ -301,7 +301,13 @@ export default function HomePage() {
         <section className="template-panel reveal-on-scroll mt-7 p-4 sm:p-5" aria-label="Recovery controls">
           <div className="flex flex-wrap items-center gap-3">
             <span className="mr-2 text-sm font-semibold text-slate-700">Recovery workflow</span>
-            <button className="premium-action template-pill bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50" disabled={liveStatus === 'loading' || isInspecting} onClick={inspectLiveState}>{isInspecting ? 'Inspecting…' : 'Inspect live state'}</button>
+            <button className="premium-action template-pill bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50" disabled={
+              liveStatus === 'loading' ||
+              isInspecting ||
+              stage === 'inspected' ||
+              stage === 'approved' ||
+              stage === 'verified'
+            } onClick={inspectLiveState}>{isInspecting ? 'Inspecting…' : 'Inspect live state'}</button>
             <button className="premium-action template-pill bg-amber-400 px-4 py-2.5 text-sm font-semibold text-slate-950 disabled:cursor-not-allowed disabled:opacity-50" disabled={liveStatus !== 'ready' || isRequestingApproval} onClick={requestApproval}>{isRequestingApproval ? 'Requesting…' : 'Request approval in Slack'}</button>
             <button className="premium-action template-pill bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 disabled:cursor-not-allowed disabled:opacity-50" disabled={!runId || isCheckingApproval} onClick={checkSlackApproval}>{isCheckingApproval ? 'Checking…' : 'Check Slack approval'}</button>
             <button className="premium-action template-pill bg-lime-300 px-4 py-2.5 text-sm font-semibold text-slate-950 disabled:cursor-not-allowed disabled:opacity-50" disabled={!runId || stage !== 'approved' || isRecovering} onClick={executeAndVerify}>{isRecovering ? 'Verifying…' : 'Execute & verify'}</button>
@@ -310,7 +316,7 @@ export default function HomePage() {
           </div>
           <p className={`mt-3 text-sm ${liveStatus === 'error' ? 'text-red-700' : liveStatus === 'ready' ? 'text-emerald-700' : 'text-slate-500'}`} role="status">{liveMessage}</p>
           {approvalMessage && <p className="mt-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800" role="status">{approvalMessage}</p>}
-          <p className="mt-2 text-xs text-slate-500">Stripe mutation and final verification are disabled until the approved Stripe recovery endpoint is connected.</p>
+          <p className="mt-2 text-xs text-slate-500">Recovery executes only after exact Slack approval and is independently verified by fresh provider rereads.</p>
         </section>
 
         <section id="evidence" className="template-panel reveal-on-scroll mt-10 p-6 sm:p-8">
