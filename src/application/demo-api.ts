@@ -7,7 +7,7 @@ import { PostgresDemoRunRepository } from '@/infrastructure/persistence/postgres
 import { SqliteDemoRunRepository } from '@/infrastructure/persistence/sqlite-demo-run-repository';
 
 export const DEMO_INSTRUCTION_TEXT = 'Launch the Pro 2027 plan at $129 per seat for new customers only. Northstar and every existing enterprise customer stay grandfathered at $99 per seat. Update our pricing policy and confirm when complete.';
-export const DEMO_RUN_CODE = 'RUN-123';
+export const DEMO_RUN_CODE = 'AMN-2027-0042';
 export const DEMO_APPROVER_USER_ID = 'U_APPROVER';
 
 export const CreateRunBodySchema = z
@@ -152,7 +152,7 @@ export function makeLocalMockProviderSet(): ProviderAdapterSet {
         channelId: 'C123',
         approverUserId: 'U_APPROVER',
         originalInstructionAvailable: true,
-        currentRunCode: 'RUN-123',
+        currentRunCode: DEMO_RUN_CODE,
         recoveryReceiptExists: true,
         readAt: '2026-09-13T00:00:00.000Z',
       }),
