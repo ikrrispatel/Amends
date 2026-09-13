@@ -12,7 +12,7 @@ export type JsonValue =
   | boolean
   | null
   | JsonValue[]
-  | { [key: string]: JsonValue };
+  | { [field: string]: JsonValue };
 
 export type CompensationMeta = {
   readonly reversibility: "readonly" | "compensable" | "irreversible";
