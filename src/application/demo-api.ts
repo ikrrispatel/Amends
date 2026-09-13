@@ -1,12 +1,13 @@
 import { z } from 'zod';
 
 import { FixtureIntentExtractor } from '@/ai/intent-extractor';
-import { type DemoRunRecord, type DemoRunRepository } from '@/domain/demo-run-repository';
+import { InMemoryDemoRunRepository, type DemoRunRecord, type DemoRunRepository } from '@/domain/demo-run-repository';
 import { type ProviderAdapterSet, RunOrchestrator } from '@/domain/run-orchestrator';
+import { PostgresDemoRunRepository } from '@/infrastructure/persistence/postgres-demo-run-repository';
 import { SqliteDemoRunRepository } from '@/infrastructure/persistence/sqlite-demo-run-repository';
 
 export const DEMO_INSTRUCTION_TEXT = 'Launch the Pro 2027 plan at $129 per seat for new customers only. Northstar and every existing enterprise customer stay grandfathered at $99 per seat. Update our pricing policy and confirm when complete.';
-export const DEMO_RUN_CODE = 'RUN-123';
+export const DEMO_RUN_CODE = 'AMN-2027-0042';
 export const DEMO_APPROVER_USER_ID = 'U_APPROVER';
 
 export const CreateRunBodySchema = z
@@ -151,7 +152,7 @@ export function makeLocalMockProviderSet(): ProviderAdapterSet {
         channelId: 'C123',
         approverUserId: 'U_APPROVER',
         originalInstructionAvailable: true,
-        currentRunCode: 'RUN-123',
+        currentRunCode: DEMO_RUN_CODE,
         recoveryReceiptExists: true,
         readAt: '2026-09-13T00:00:00.000Z',
       }),
@@ -160,6 +161,10 @@ export function makeLocalMockProviderSet(): ProviderAdapterSet {
 }
 
 export function createDefaultDemoRunRepository(): DemoRunRepository {
+  if (process.env.DATABASE_URL) {
+    return new PostgresDemoRunRepository(process.env.DATABASE_URL);
+  }
+
   return new SqliteDemoRunRepository(process.env.AMENDS_DATABASE_PATH ?? './data/amends.sqlite');
 }
 
@@ -169,7 +174,7 @@ export function createDemoApiRuntime(overrides?: {
   approverUserId?: string;
   defaultRunCode?: string;
 }): DemoApiRuntime {
-  const repository = overrides?.repository ?? createDefaultDemoRunRepository();
+  const repository = overrides?.repository ?? new InMemoryDemoRunRepository();
   const providers = overrides?.providers ?? makeLocalMockProviderSet();
   const approverUserId = overrides?.approverUserId ?? DEMO_APPROVER_USER_ID;
   const defaultRunCode = overrides?.defaultRunCode ?? DEMO_RUN_CODE;
@@ -197,21 +202,21 @@ let activeRuntime: DemoApiRuntime | undefined;
 
 export function getDemoRuntime(): DemoApiRuntime {
   if (!activeRuntime) {
-    activeRuntime = createDemoApiRuntime();
+    activeRuntime = createDemoApiRuntime({ repository: createDefaultDemoRunRepository() });
   }
 
   return activeRuntime;
 }
 
-export function resetDemoRuntime(): DemoApiRuntime {
+export async function resetDemoRuntime(): Promise<DemoApiRuntime> {
   if (!activeRuntime) {
-    activeRuntime = createDemoApiRuntime();
+    activeRuntime = createDemoApiRuntime({ repository: createDefaultDemoRunRepository() });
     return activeRuntime;
   }
 
-  const currentRepository = activeRuntime.repository as DemoRunRepository & { reset?: () => void };
+  const currentRepository = activeRuntime.repository as DemoRunRepository & { reset?: () => void | Promise<void> };
   if (currentRepository && typeof currentRepository.reset === 'function') {
-    currentRepository.reset();
+    await currentRepository.reset();
   }
 
   activeRuntime = createDemoApiRuntime({

@@ -18,7 +18,7 @@ export async function POST(request: Request, context?: { params?: Promise<{ runI
     const parsed = ApproveRunBodySchema.parse(body);
     const runtime = getDemoRuntime();
 
-    const current = runtime.repository.get(runId);
+    const current = await runtime.repository.get(runId);
     if (current && current.currentState !== 'APPROVAL_PENDING') {
       await runtime.orchestrator.createApprovalPlan(runId, parsed.runCode);
     }

@@ -15,7 +15,7 @@ export async function GET(_request: Request, context?: { params?: Promise<{ runI
     const params = context?.params ? await Promise.resolve(context.params) : { runId: await resolveUrlRunId(_request) };
     const { runId } = runIdParamSchema.parse(params);
     const runtime = getDemoRuntime();
-    const record = runtime.repository.get(runId);
+    const record = await runtime.repository.get(runId);
 
     if (!record) {
       return errorResponse(404, 'RUN_NOT_FOUND', `Run ${runId} was not found.`);

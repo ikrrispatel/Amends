@@ -56,10 +56,10 @@ export const DemoRunRecordSchema = z
 export type DemoRunRecord = z.infer<typeof DemoRunRecordSchema>;
 
 export interface DemoRunRepository {
-  get(runId: string): DemoRunRecord | undefined;
-  create(record: DemoRunRecord): DemoRunRecord;
-  save(record: DemoRunRecord): DemoRunRecord;
-  list(): DemoRunRecord[];
+  get(runId: string): DemoRunRecord | undefined | Promise<DemoRunRecord | undefined>;
+  create(record: DemoRunRecord): DemoRunRecord | Promise<DemoRunRecord>;
+  save(record: DemoRunRecord): DemoRunRecord | Promise<DemoRunRecord>;
+  list(): DemoRunRecord[] | Promise<DemoRunRecord[]>;
 }
 
 export class InMemoryDemoRunRepository implements DemoRunRepository {
