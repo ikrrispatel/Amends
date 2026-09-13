@@ -6,8 +6,8 @@ Deliver one secure-enough, inspectable hackathon demonstration without building 
 
 ## 2. Stack
 
-- Node.js 24 LTS
-- `pnpm` with committed lockfile
+- Node.js 20.20.2
+- npm 10.8.2 with committed `package-lock.json`
 - Strict TypeScript
 - Next.js 16 App Router
 - React, Tailwind CSS, shadcn/ui

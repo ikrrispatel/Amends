@@ -15,7 +15,7 @@ Exactly one phase is active. Person A authorizes each phase only after the previ
 4. Clone ChronoMCP separately; record upstream URL, license, and commit hash.
 5. Run install, tests, build, and its compensation demo.
 6. Make a 30-minute keep/drop decision. If dropped, use direct fixed handlers.
-7. Scaffold strict Next.js, pin Node/pnpm/dependencies, add environment validation and secret scanning.
+7. Scaffold strict Next.js, pin Node/npm/dependencies, add environment validation and secret scanning.
 
 **Gate:** App builds; no secret is tracked; ChronoMCP decision is documented with evidence; every teammate can state the exact three apps, scenario, and originality boundary.
 
@@ -123,15 +123,15 @@ Never cut a required external app, real state reread, approval validation, idemp
 ## Standard checks
 
 ```bash
-pnpm format:check
-pnpm lint
-pnpm typecheck
-pnpm test
-pnpm test:integration
-pnpm test:e2e
-pnpm build
-pnpm security:secrets
-pnpm audit --audit-level=high
+npm run format:check
+npm run lint
+npm run typecheck
+npm test
+npm run test:integration
+npm run test:e2e
+npm run build
+npm run security:secrets
+npm audit --audit-level=high
 ```
 
 Commands become required only after their scripts are introduced in the corresponding phase.
