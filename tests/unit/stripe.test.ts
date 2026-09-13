@@ -140,4 +140,17 @@ describe("StripeAdapter", () => {
     expect(snapshot.customerId).toBe("cus_acme");
     expect(snapshot.quantity).toBe(12);
   });
+
+  it("resets and injects the deterministic successful-but-wrong state", async () => {
+    const synthetic = createSyntheticStripeClient([
+      { customerId: "cus_northstar", subscriptionId: "sub_northstar", priceId: "price_old", unitAmount: 9900, quantity: 87 },
+      { customerId: "cus_acme", subscriptionId: "sub_acme", priceId: "price_old", unitAmount: 9900, quantity: 12 },
+    ]);
+    synthetic.injectFault();
+    expect((await synthetic.retrieveSubscription("sub_northstar")).unitAmount).toBe(12900);
+    expect((await synthetic.retrieveSubscription("sub_acme")).unitAmount).toBe(12900);
+    synthetic.reset();
+    expect((await synthetic.retrieveSubscription("sub_northstar")).unitAmount).toBe(9900);
+    expect((await synthetic.retrieveSubscription("sub_acme")).unitAmount).toBe(9900);
+  });
 });

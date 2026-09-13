@@ -11,6 +11,8 @@ export type SyntheticStripeRecord = {
 
 export type SyntheticStripeClient = StripeTestClient & {
   readonly getUpdateCount: () => number;
+  readonly reset: () => void;
+  readonly injectFault: () => void;
 };
 
 export function createSyntheticStripeClient(
@@ -18,7 +20,7 @@ export function createSyntheticStripeClient(
     { customerId: "cus_northstar", subscriptionId: "sub_northstar", priceId: "price_new", unitAmount: 12900, quantity: 87 },
   ],
 ): SyntheticStripeClient {
-  const snapshots = new Map<string, StripeSubscriptionSnapshot>(records.map((record) => [record.subscriptionId, {
+  const baseline = new Map<string, StripeSubscriptionSnapshot>(records.map((record) => [record.subscriptionId, {
     subscriptionId: record.subscriptionId,
     customerId: record.customerId,
     status: "active",
@@ -27,6 +29,7 @@ export function createSyntheticStripeClient(
     quantity: record.quantity,
     latestInvoiceId: null,
   }]));
+  const snapshots = new Map(baseline);
   let updateCount = 0;
 
   return {
@@ -44,5 +47,15 @@ export function createSyntheticStripeClient(
       return next;
     },
     getUpdateCount: () => updateCount,
+    reset: () => {
+      snapshots.clear();
+      for (const [id, snapshot] of baseline) snapshots.set(id, snapshot);
+      updateCount = 0;
+    },
+    injectFault: () => {
+      for (const [id, snapshot] of snapshots) {
+        snapshots.set(id, { ...snapshot, priceId: "price_new", unitAmount: 12900 });
+      }
+    },
   };
 }
