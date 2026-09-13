@@ -36,10 +36,9 @@ The repository validation gate currently passes:
 
 ## Demo
 
-[▶ Watch the 2-minute Amends demo]([https://drive.google.com/file/d/FILE_ID/view?usp=sharing](https://drive.google.com/file/d/1aHSWcB-T6QhM-vCNp52eYGmVS8vamB4G/view?usp=sharing))
+[▶ Watch the 2-minute Amends demo](https://drive.google.com/file/d/1aHSWcB-T6QhM-vCNp52eYGmVS8vamB4G/view?usp=sharing)
 
 Intent mismatch detection → $2,610/month exposure → Slack approval → guarded recovery → VERIFIED 5/5.
-
 ## Problem
 
 A 200 OK response is not evidence that the agent fulfilled the user’s intent.
