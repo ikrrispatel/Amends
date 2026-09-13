@@ -36,7 +36,7 @@ The repository validation gate currently passes:
 
 ## Demo
 
-[![Watch the Amends demo](public/amends-demo.png)](YOUR_GOOGLE_DRIVE_VIDEO_LINK)
+[![Watch the Amends demo](public/amends-demo.png)]([YOUR_GOOGLE_DRIVE_VIDEO_LINK](https://drive.google.com/drive/folders/14NAg8qFUmXAwlB-ClhWDhm1SJdWiOkIq?usp=sharing))
 
 **2-minute demo:** Intent mismatch detection → $2,610/month exposure → Slack approval → guarded recovery → VERIFIED 5/5.
 
