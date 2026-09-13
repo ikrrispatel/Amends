@@ -3,9 +3,13 @@ import { z } from 'zod';
 import { AuditEventSchema, type AuditEvent } from '@/domain/audit';
 import { DemoRunRecordSchema, type DemoRunRecord } from '@/domain/demo-run-repository';
 
-type DemoRunRow = { run_id: string; record_json: DemoRunRecord; created_at: string; updated_at: string };
-type ActionRow = { idempotency_key: string; action_json: Record<string, unknown> };
-type AuditRow = { event_json: AuditEvent };
+function decodeJson(value: unknown): unknown {
+  return typeof value === 'string' ? JSON.parse(value) : value;
+}
+
+type DemoRunRow = { run_id: string; record_json: unknown; created_at: string; updated_at: string };
+type ActionRow = { idempotency_key: string; run_id: string; action_json: unknown };
+type AuditRow = { event_json: unknown };
 
 /** Async durable repository for Neon/Postgres. The app boundary must await these methods. */
 export class PostgresDemoRunRepository {
@@ -47,26 +51,26 @@ export class PostgresDemoRunRepository {
 
   async get(runId: string): Promise<DemoRunRecord | undefined> {
     const rows = await this.sql<DemoRunRow[]>`SELECT run_id, record_json, created_at, updated_at FROM demo_runs WHERE run_id=${runId}`;
-    return rows[0] ? DemoRunRecordSchema.parse(rows[0].record_json) : undefined;
+    return rows[0] ? DemoRunRecordSchema.parse(decodeJson(rows[0].record_json)) : undefined;
   }
 
   async create(record: DemoRunRecord): Promise<DemoRunRecord> {
     const parsed = DemoRunRecordSchema.parse(record);
     const existing = await this.get(parsed.runId);
     if (existing) throw new Error(`Duplicate demo run ID rejected: ${parsed.runId}`);
-    const rows = await this.sql<DemoRunRow[]>`INSERT INTO demo_runs (run_id,record_json,created_at,updated_at) VALUES (${parsed.runId},${JSON.stringify(parsed)}::jsonb,${parsed.createdAt},${parsed.updatedAt}) RETURNING run_id,record_json,created_at,updated_at`;
-    return DemoRunRecordSchema.parse(rows[0].record_json);
+    const rows = await this.sql<DemoRunRow[]>`INSERT INTO demo_runs (run_id,record_json,created_at,updated_at) VALUES (${parsed.runId},${this.sql.json(parsed)},${parsed.createdAt},${parsed.updatedAt}) RETURNING run_id,record_json,created_at,updated_at`;
+    return DemoRunRecordSchema.parse(decodeJson(rows[0].record_json));
   }
 
   async save(record: DemoRunRecord): Promise<DemoRunRecord> {
     const parsed = DemoRunRecordSchema.parse(record);
-    const rows = await this.sql<DemoRunRow[]>`INSERT INTO demo_runs (run_id,record_json,created_at,updated_at) VALUES (${parsed.runId},${JSON.stringify(parsed)}::jsonb,${parsed.createdAt},${parsed.updatedAt}) ON CONFLICT (run_id) DO UPDATE SET record_json=EXCLUDED.record_json,updated_at=EXCLUDED.updated_at RETURNING run_id,record_json,created_at,updated_at`;
-    return DemoRunRecordSchema.parse(rows[0].record_json);
+    const rows = await this.sql<DemoRunRow[]>`INSERT INTO demo_runs (run_id,record_json,created_at,updated_at) VALUES (${parsed.runId},${this.sql.json(parsed)},${parsed.createdAt},${parsed.updatedAt}) ON CONFLICT (run_id) DO UPDATE SET record_json=EXCLUDED.record_json,updated_at=EXCLUDED.updated_at RETURNING run_id,record_json,created_at,updated_at`;
+    return DemoRunRecordSchema.parse(decodeJson(rows[0].record_json));
   }
 
   async list(): Promise<DemoRunRecord[]> {
     const rows = await this.sql<DemoRunRow[]>`SELECT run_id,record_json,created_at,updated_at FROM demo_runs ORDER BY created_at ASC,run_id ASC`;
-    return rows.map((row) => DemoRunRecordSchema.parse(row.record_json));
+    return rows.map((row) => DemoRunRecordSchema.parse(decodeJson(row.record_json)));
   }
 
   async reset(): Promise<void> {
@@ -81,20 +85,20 @@ export class PostgresDemoRunRepository {
 
   async recordAction(idempotencyKey: string, runId: string, action: Record<string, unknown>): Promise<Record<string, unknown>> {
     const parsedAction = z.record(z.string(), z.unknown()).parse(action);
-    const rows = await this.sql<ActionRow[]>`INSERT INTO demo_actions (idempotency_key,run_id,action_json) VALUES (${idempotencyKey},${runId},${JSON.stringify(parsedAction)}::jsonb) ON CONFLICT (idempotency_key) DO NOTHING RETURNING idempotency_key,action_json`;
-    if (rows[0]) return rows[0].action_json;
-    const existing = await this.sql<ActionRow[]>`SELECT idempotency_key,action_json FROM demo_actions WHERE idempotency_key=${idempotencyKey}`;
-    return existing[0].action_json;
+    const rows = await this.sql<ActionRow[]>`INSERT INTO demo_actions (idempotency_key,run_id,action_json) VALUES (${idempotencyKey},${runId},${this.sql.json(parsedAction as never)}) ON CONFLICT (idempotency_key) DO NOTHING RETURNING idempotency_key,run_id,action_json`;
+    if (rows[0]) return z.record(z.string(), z.unknown()).parse(decodeJson(rows[0].action_json));
+    const existing = await this.sql<ActionRow[]>`SELECT idempotency_key,run_id,action_json FROM demo_actions WHERE idempotency_key=${idempotencyKey}`;
+    return z.record(z.string(), z.unknown()).parse(decodeJson(existing[0].action_json));
   }
 
   async appendAuditEvent(event: AuditEvent): Promise<void> {
     const parsed = AuditEventSchema.parse(event);
-    await this.sql`INSERT INTO demo_audit_events (run_id,sequence,event_json,occurred_at) VALUES (${parsed.runId},${parsed.sequence},${JSON.stringify(parsed)}::jsonb,${parsed.occurredAt})`;
+    await this.sql`INSERT INTO demo_audit_events (run_id,sequence,event_json,occurred_at) VALUES (${parsed.runId},${parsed.sequence},${this.sql.json(parsed)},${parsed.occurredAt})`;
   }
 
   async listAuditEvents(runId: string): Promise<AuditEvent[]> {
     const rows = await this.sql<AuditRow[]>`SELECT event_json FROM demo_audit_events WHERE run_id=${runId} ORDER BY sequence ASC`;
-    return rows.map((row) => AuditEventSchema.parse(row.event_json));
+    return rows.map((row) => AuditEventSchema.parse(decodeJson(row.event_json)));
   }
 
   async close(): Promise<void> { await this.sql.end({ timeout: 5 }); }

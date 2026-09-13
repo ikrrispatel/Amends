@@ -87,7 +87,7 @@ export class RunOrchestrator {
   constructor(private readonly config: RunOrchestratorConfig) {}
 
   public async createRun(runId: string, runCode: string, rawInstruction: string): Promise<DemoRunRecord> {
-    if (this.config.repository.get(runId)) {
+    if (await this.config.repository.get(runId)) {
       throw new Error(`Duplicate demo run ID rejected: ${runId}`);
     }
 
@@ -110,12 +110,12 @@ export class RunOrchestrator {
       updatedAt: new Date().toISOString(),
     });
 
-    const saved = this.config.repository.create(initial);
+    const saved = await this.config.repository.create(initial);
     return this.inspectRun(saved.runId);
   }
 
   public async inspectRun(runId: string): Promise<DemoRunRecord> {
-    let record = this.config.repository.get(runId);
+    let record = await this.config.repository.get(runId);
     if (!record) {
       throw new Error(`Unknown run: ${runId}`);
     }
@@ -200,7 +200,7 @@ export class RunOrchestrator {
         record = this.transitionState(record, 'MISMATCH_FOUND');
       }
 
-      return this.config.repository.save(record);
+      return await this.config.repository.save(record);
     } catch (error) {
       const failure = this.toSanitizedFailure(error, 'INSPECTION_FAILED');
       const terminalState = this.safeFailureState(record.currentState, 'INSPECTION_FAILED');
@@ -208,12 +208,12 @@ export class RunOrchestrator {
         { ...record, sanitizedFailure: failure, updatedAt: new Date().toISOString() },
         terminalState,
       );
-      return this.config.repository.save(failed);
+      return await this.config.repository.save(failed);
     }
   }
 
   public async createApprovalPlan(runId: string, runCode: string): Promise<DemoRunRecord> {
-    let record = this.config.repository.get(runId);
+    let record = await this.config.repository.get(runId);
     if (!record) {
       throw new Error(`Unknown run: ${runId}`);
     }
@@ -239,37 +239,37 @@ export class RunOrchestrator {
       sanitizedFailure: null,
     };
 
-    return this.config.repository.save(this.transitionState(record, 'APPROVAL_PENDING'));
+    return await this.config.repository.save(this.transitionState(record, 'APPROVAL_PENDING'));
   }
 
   public async approveRun(runId: string, runCode: string, approvedBy: string, approvalMessage: string): Promise<DemoRunRecord> {
-    let record = this.config.repository.get(runId);
+    let record = await this.config.repository.get(runId);
     if (!record) {
       throw new Error(`Unknown run: ${runId}`);
     }
 
     if (record.currentState !== 'APPROVAL_PENDING') {
-      return this.rejectWithFailure(record, 'APPROVAL_DENIED', 'Approval can only be granted while the run is pending.');
+      return await this.rejectWithFailure(record, 'APPROVAL_DENIED', 'Approval can only be granted while the run is pending.');
     }
 
     if (record.runCode !== runCode) {
-      return this.rejectWithFailure(record, 'APPROVAL_DENIED', 'Exact run code is required.');
+      return await this.rejectWithFailure(record, 'APPROVAL_DENIED', 'Exact run code is required.');
     }
 
     if (approvedBy !== this.config.approverUserId) {
-      return this.rejectWithFailure(record, 'APPROVAL_DENIED', 'Wrong approver.');
+      return await this.rejectWithFailure(record, 'APPROVAL_DENIED', 'Wrong approver.');
     }
 
     if (approvalMessage !== `APPROVE ${runCode}`) {
-      return this.rejectWithFailure(record, 'APPROVAL_DENIED', 'Approval grammar must be EXACT.');
+      return await this.rejectWithFailure(record, 'APPROVAL_DENIED', 'Approval grammar must be EXACT.');
     }
 
     if (!record.plan) {
-      return this.rejectWithFailure(record, 'PLAN_EXPIRED', 'Missing plan.');
+      return await this.rejectWithFailure(record, 'PLAN_EXPIRED', 'Missing plan.');
     }
 
     if (new Date(record.plan.expiresAt).getTime() <= Date.now()) {
-      return this.rejectWithFailure(record, 'PLAN_EXPIRED', 'Plan expired.');
+      return await this.rejectWithFailure(record, 'PLAN_EXPIRED', 'Plan expired.');
     }
 
     const hashPayload = { ...record.plan };
@@ -277,7 +277,7 @@ export class RunOrchestrator {
     delete (payload as { hash?: string }).hash;
     const expectedHash = createCanonicalRecoveryPlanHash(payload as never);
     if (record.plan.hash !== expectedHash) {
-      return this.rejectWithFailure(record, 'MANUAL_REVIEW', 'Plan hash changed and must be re-inspected.');
+      return await this.rejectWithFailure(record, 'MANUAL_REVIEW', 'Plan hash changed and must be re-inspected.');
     }
 
     record = {
@@ -288,11 +288,11 @@ export class RunOrchestrator {
       sanitizedFailure: null,
     };
 
-    return this.config.repository.save(this.transitionState(record, 'APPROVED'));
+    return await this.config.repository.save(this.transitionState(record, 'APPROVED'));
   }
 
   public async executeRecovery(runId: string): Promise<DemoRunRecord> {
-    let record = this.config.repository.get(runId);
+    let record = await this.config.repository.get(runId);
     if (!record) {
       throw new Error(`Unknown run: ${runId}`);
     }
@@ -304,7 +304,7 @@ export class RunOrchestrator {
         provider: undefined,
       });
 
-      return this.config.repository.save({
+      return await this.config.repository.save({
         ...record,
         sanitizedFailure: failure,
         updatedAt: new Date().toISOString(),
@@ -312,27 +312,27 @@ export class RunOrchestrator {
     }
 
     if (record.currentState === 'VERIFICATION_FAILED' || record.currentState === 'MANUAL_REVIEW' || record.currentState === 'PLAN_EXPIRED' || record.currentState === 'APPROVAL_DENIED' || record.currentState === 'INSPECTION_FAILED' || record.currentState === 'NO_MISMATCH' || record.currentState === 'RECOVERY_PARTIAL') {
-      return this.rejectWithFailure(record, 'MANUAL_REVIEW', 'Recovery is not allowed from a terminal state.');
+      return await this.rejectWithFailure(record, 'MANUAL_REVIEW', 'Recovery is not allowed from a terminal state.');
     }
 
     if (record.currentState !== 'APPROVED') {
-      return this.rejectWithFailure(record, 'MANUAL_REVIEW', 'Recovery cannot execute before approval.');
+      return await this.rejectWithFailure(record, 'MANUAL_REVIEW', 'Recovery cannot execute before approval.');
     }
 
     if (!record.plan) {
-      return this.rejectWithFailure(record, 'MANUAL_REVIEW', 'Recovery plan missing.');
+      return await this.rejectWithFailure(record, 'MANUAL_REVIEW', 'Recovery plan missing.');
     }
 
     if (record.approvedBy !== this.config.approverUserId) {
-      return this.rejectWithFailure(record, 'APPROVAL_DENIED', 'Approval actor mismatch.');
+      return await this.rejectWithFailure(record, 'APPROVAL_DENIED', 'Approval actor mismatch.');
     }
 
     if (record.runCode == null) {
-      return this.rejectWithFailure(record, 'MANUAL_REVIEW', 'Run code is required.');
+      return await this.rejectWithFailure(record, 'MANUAL_REVIEW', 'Run code is required.');
     }
 
     if (new Date(record.plan.expiresAt).getTime() <= Date.now()) {
-      return this.rejectWithFailure(record, 'PLAN_EXPIRED', 'Approved plan expired.');
+      return await this.rejectWithFailure(record, 'PLAN_EXPIRED', 'Approved plan expired.');
     }
 
     const hashPayload = { ...record.plan };
@@ -340,21 +340,21 @@ export class RunOrchestrator {
     delete (payload as { hash?: string }).hash;
     const expectedHash = createCanonicalRecoveryPlanHash(payload as never);
     if (record.plan.hash !== expectedHash) {
-      return this.rejectWithFailure(record, 'MANUAL_REVIEW', 'Plan hash changed after approval.');
+      return await this.rejectWithFailure(record, 'MANUAL_REVIEW', 'Plan hash changed after approval.');
     }
 
-    const before = this.config.repository.get(runId);
+    const before = await this.config.repository.get(runId);
     const executed = new Set(before?.executedActionIds ?? []);
 
     if (record.plan.actions.some((action) => executed.has(action.actionId))) {
-      return this.rejectWithFailure(record, 'MANUAL_REVIEW', 'Duplicate action execution prevented.');
+      return await this.rejectWithFailure(record, 'MANUAL_REVIEW', 'Duplicate action execution prevented.');
     }
 
     try {
       const actionResults = [] as Array<{ actionId: string; type: string; status: string }>;
       for (const action of record.plan.actions) {
         if (executed.has(action.actionId)) {
-          return this.rejectWithFailure(record, 'RECOVERY_PARTIAL', 'Duplicate action execution prevented.');
+          return await this.rejectWithFailure(record, 'RECOVERY_PARTIAL', 'Duplicate action execution prevented.');
         }
 
         const idempotencyKey = createIdempotencyKey(record.runId, record.plan.hash, action.actionId, action.type);
@@ -463,10 +463,10 @@ export class RunOrchestrator {
       };
 
       if (failureSet.passes) {
-        return this.config.repository.save(this.transitionState(record, 'VERIFIED'));
+        return await this.config.repository.save(this.transitionState(record, 'VERIFIED'));
       }
 
-      return this.config.repository.save(this.transitionState(record, 'VERIFICATION_FAILED'));
+      return await this.config.repository.save(this.transitionState(record, 'VERIFICATION_FAILED'));
     } catch (error) {
       const failure = this.toSanitizedFailure(error, 'RECOVERY_PARTIAL');
       const terminalState = this.safeFailureState(record.currentState, 'RECOVERY_PARTIAL');
@@ -478,7 +478,7 @@ export class RunOrchestrator {
         },
         terminalState,
       );
-      return this.config.repository.save(failed);
+      return await this.config.repository.save(failed);
     }
   }
 
@@ -492,7 +492,7 @@ export class RunOrchestrator {
     return DemoRunRecordSchema.parse(updated);
   }
 
-  private rejectWithFailure(record: DemoRunRecord, state: 'APPROVAL_DENIED' | 'PLAN_EXPIRED' | 'MANUAL_REVIEW' | 'RECOVERY_PARTIAL', message: string): DemoRunRecord {
+  private async rejectWithFailure(record: DemoRunRecord, state: 'APPROVAL_DENIED' | 'PLAN_EXPIRED' | 'MANUAL_REVIEW' | 'RECOVERY_PARTIAL', message: string): Promise<DemoRunRecord> {
     const failure = this.toSanitizedFailure(new Error(message), state);
     const terminalState = this.safeFailureState(record.currentState, state);
 
@@ -505,7 +505,7 @@ export class RunOrchestrator {
         },
         terminalState,
       );
-      return this.config.repository.save(failed);
+      return await this.config.repository.save(failed);
     }
 
     const failed = this.transitionState(
@@ -516,7 +516,7 @@ export class RunOrchestrator {
       },
       terminalState,
     );
-    return this.config.repository.save(failed);
+    return await this.config.repository.save(failed);
   }
 
   private safeFailureState(currentState: DemoRunRecord['currentState'], fallback: 'INSPECTION_FAILED' | 'APPROVAL_DENIED' | 'PLAN_EXPIRED' | 'MANUAL_REVIEW' | 'RECOVERY_PARTIAL' | 'VERIFICATION_FAILED'): DemoRunRecord['currentState'] {
