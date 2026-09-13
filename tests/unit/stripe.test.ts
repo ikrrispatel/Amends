@@ -153,4 +153,18 @@ describe("StripeAdapter", () => {
     expect((await synthetic.retrieveSubscription("sub_northstar")).unitAmount).toBe(9900);
     expect((await synthetic.retrieveSubscription("sub_acme")).unitAmount).toBe(9900);
   });
+
+  it("rejects an unknown customer alias before reading Stripe", async () => {
+    const retrieveSubscription = vi.fn(async () => wrongSnapshot);
+    const adapter = new StripeAdapter(config, client({ retrieveSubscription }));
+    await expect(adapter.readCustomer("not-allowlisted")).rejects.toMatchObject({ code: "INVALID_ALIAS" });
+    expect(retrieveSubscription).not.toHaveBeenCalled();
+  });
+
+  it("rejects malformed idempotency keys before mutation", async () => {
+    const updateSubscription = vi.fn(async () => restoredSnapshot);
+    const adapter = new StripeAdapter(config, client({ updateSubscription }));
+    await expect(adapter.restoreGrandfatheredPrice("northstar", wrongSnapshot, "bad")).rejects.toMatchObject({ code: "INVALID_IDEMPOTENCY_KEY" });
+    expect(updateSubscription).not.toHaveBeenCalled();
+  });
 });

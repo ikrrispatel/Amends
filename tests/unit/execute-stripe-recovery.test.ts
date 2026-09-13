@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { InMemoryActionLedger } from "../../src/infrastructure/action-ledger.js";
 import { createSyntheticStripeClient } from "../../src/integrations/stripe-demo.js";
 import { StripeAdapter } from "../../src/integrations/stripe.js";
@@ -55,5 +55,23 @@ describe("executeStripeRecovery", () => {
 
     expect(replay.status).toBe("REPLAY");
     expect(synthetic.getUpdateCount()).toBe(1);
+  });
+
+  it("records a failed provider mutation without claiming recovery", async () => {
+    const adapter = new StripeAdapter(config, createSyntheticStripeClient());
+    const ledger = new InMemoryActionLedger();
+    const expected = await adapter.readCustomer("northstar");
+    vi.spyOn(adapter, "restoreGrandfatheredPrice").mockRejectedValue(new Error("provider timeout"));
+
+    const result = await executeStripeRecovery({
+      actionId: "action_demo_102",
+      runId: "run_demo_102",
+      customerAlias: "northstar",
+      expected,
+      idempotencyKey: "run_demo_stripe_102",
+      now: "2026-09-13T00:00:00Z",
+    }, adapter, ledger);
+
+    expect(result.status).toBe("FAILED");
   });
 });
