@@ -105,7 +105,7 @@ export async function runCompensation(
       report.push({
         toolName: step.toolName,
         status: "irreversible",
-        detail: step.compensate?.notes,
+        ...(step.compensate?.notes ? { detail: step.compensate.notes } : {}),
       });
       continue;
     }
@@ -129,7 +129,11 @@ export async function runCompensation(
     report.push({
       toolName: step.toolName,
       status: compensated ? "compensated" : "compensation_failed",
-      detail: compensated ? `via ${plan.toolName}` : lastDetail,
+      ...(compensated
+        ? { detail: `via ${plan.toolName}` }
+        : lastDetail
+          ? { detail: lastDetail }
+          : {}),
     });
   }
 
