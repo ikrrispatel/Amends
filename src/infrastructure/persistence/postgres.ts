@@ -2,9 +2,28 @@ import postgres, { type Sql } from "postgres";
 import { z } from "zod";
 import { AuditEventSchema, type AuditEvent } from "../../domain/audit.js";
 import { RunStateSchema, type RunState } from "../../domain/run-states.js";
-import type { ActionRecord, RunRecord } from "./sqlite.js";
-
 const JsonObjectSchema = z.record(z.string(), z.unknown());
+
+export type RunRecord = {
+  readonly runId: string;
+  readonly status: RunState;
+  readonly planHash: string | null;
+  readonly version: number;
+  readonly projection: Record<string, unknown>;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+};
+
+export type ActionRecord = {
+  readonly runId: string;
+  readonly actionId: string;
+  readonly actionType: string;
+  readonly idempotencyKey: string;
+  readonly status: "PENDING" | "SUCCEEDED" | "FAILED" | "SKIPPED";
+  readonly result: Record<string, unknown> | null;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+};
 
 type RunRow = { run_id: string; status: string; plan_hash: string | null; version: number; projection: Record<string, unknown>; created_at: string; updated_at: string };
 type ActionRow = { run_id: string; action_id: string; action_type: string; idempotency_key: string; status: ActionRecord["status"]; result: Record<string, unknown> | null; created_at: string; updated_at: string };
