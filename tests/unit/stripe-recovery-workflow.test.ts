@@ -12,6 +12,8 @@ describe("Stripe recovery workflow", () => {
     expect(await workflow.recover()).toBe("COMMITTED");
     expect(await workflow.verify()).toBe(true);
     expect(workflow.state()).toBe("VERIFIED");
+    expect(workflow.audit()).toHaveLength(6);
+    expect(workflow.audit()[0]!.eventType).toBe("INSPECTION_STARTED");
   });
 
   it("rejects recovery before approval", async () => {
