@@ -34,6 +34,11 @@ The repository validation gate currently passes:
 - secret scan pass
 - Neon persistence integration pass
 
+### Demo
+
+[▶ Watch the 2-minute Amends demo](public/amends-demo.mp4)
+
+Intent mismatch detection → $2,610/month exposure → Slack approval → guarded recovery → VERIFIED 5/5.
 
 ## Problem
 
