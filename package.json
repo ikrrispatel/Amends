@@ -9,11 +9,13 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "security:secrets": "node scripts/scan-secrets.mjs",
+    "db:migrate": "node --import tsx scripts/db-migrate.ts",
     "test": "node --import tsx --test $(find src -type f -name \"*.test.ts\" | sort)"
   },
   "dependencies": {
     "better-sqlite3": "12.11.1",
     "next": "16.3.5",
+    "postgres": "^3.4.9",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "zod": "4.6.4"
