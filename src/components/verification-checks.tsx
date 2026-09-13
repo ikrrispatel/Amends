@@ -21,7 +21,7 @@ export function VerificationChecks({ checks }: VerificationChecksProps) {
   const complete = checks.length > 0 && passed === checks.length;
 
   return (
-    <section className="template-card rounded-2xl border border-slate-200 bg-white p-5 shadow-sm" aria-labelledby="verification-heading">
+    <section className="template-card reveal-on-scroll rounded-2xl border border-slate-200 bg-white p-5 shadow-sm" aria-labelledby="verification-heading">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Fresh reread</p>

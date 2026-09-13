@@ -13,7 +13,7 @@ interface AuditTimelineProps {
 
 export function AuditTimeline({ events }: AuditTimelineProps) {
   return (
-    <section className="template-card rounded-2xl border border-slate-200 bg-white p-5 shadow-sm" aria-labelledby="timeline-heading">
+    <section className="template-card reveal-on-scroll rounded-2xl border border-slate-200 bg-white p-5 shadow-sm" aria-labelledby="timeline-heading">
       <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Append-only record</p>
       <h2 id="timeline-heading" className="mt-1 text-lg font-semibold text-slate-950">Run timeline</h2>
       <ol className="mt-5 space-y-5">

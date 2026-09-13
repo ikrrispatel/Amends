@@ -115,6 +115,15 @@ export default function HomePage() {
     return () => { cancelled = true; };
   }, []);
 
+  useEffect(() => {
+    const elements = document.querySelectorAll<HTMLElement>('.reveal-on-scroll');
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => entry.target.classList.toggle('is-visible', entry.isIntersecting));
+    }, { threshold: 0.12, rootMargin: '0px 0px -7% 0px' });
+    elements.forEach((element) => observer.observe(element));
+    return () => observer.disconnect();
+  }, []);
+
   async function requestApproval() {
     setIsRequestingApproval(true);
     setApprovalMessage('Posting approval request to Slack…');
@@ -261,7 +270,7 @@ export default function HomePage() {
   return (
     <main className="amends-shell min-h-screen px-5 py-5 sm:px-8 lg:px-12">
       <div className="mx-auto max-w-7xl">
-        <nav className="template-panel mb-12 flex items-center justify-between px-5 py-3 sm:px-7" aria-label="Primary navigation">
+        <nav className="template-panel reveal-on-scroll mb-12 flex items-center justify-between px-5 py-3 sm:px-7" aria-label="Primary navigation">
           <div className="flex items-center gap-3">
             <span className="rounded-full bg-slate-950 px-3 py-1.5 text-xs font-bold tracking-[0.16em] text-white">AMENDS</span>
             <span className="hidden text-xs font-medium text-slate-500 sm:inline">Outcome assurance platform</span>
@@ -274,7 +283,7 @@ export default function HomePage() {
           <span className="template-pill bg-lime-100 px-3 py-1.5 text-xs font-semibold text-lime-900">Live demo · TEST</span>
         </nav>
 
-        <header className="flex flex-wrap items-end justify-between gap-8 border-b border-black/15 pb-10">
+        <header className="reveal-on-scroll flex flex-wrap items-end justify-between gap-8 border-b border-black/15 pb-10">
           <div>
             <p className="mb-5 text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">IntentLock / Recovery workspace</p>
             <h1 className="amends-display max-w-4xl text-5xl leading-[0.92] text-slate-950 sm:text-7xl lg:text-8xl">Make every change <span className="relative inline-block"><span className="relative z-10">provable.</span><span className="absolute inset-x-0 bottom-1 -z-0 h-3 bg-lime-300 sm:h-5" /></span></h1>
@@ -289,14 +298,14 @@ export default function HomePage() {
           </div>
         </header>
 
-        <section className="template-panel mt-7 p-4 sm:p-5" aria-label="Recovery controls">
+        <section className="template-panel reveal-on-scroll mt-7 p-4 sm:p-5" aria-label="Recovery controls">
           <div className="flex flex-wrap items-center gap-3">
             <span className="mr-2 text-sm font-semibold text-slate-700">Recovery workflow</span>
-            <button className="template-pill bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50" disabled={liveStatus === 'loading' || isInspecting} onClick={inspectLiveState}>{isInspecting ? 'Inspecting…' : 'Inspect live state'}</button>
-            <button className="template-pill bg-amber-400 px-4 py-2.5 text-sm font-semibold text-slate-950 transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50" disabled={liveStatus !== 'ready' || isRequestingApproval} onClick={requestApproval}>{isRequestingApproval ? 'Requesting…' : 'Request approval in Slack'}</button>
-            <button className="template-pill bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50" disabled={!runId || isCheckingApproval} onClick={checkSlackApproval}>{isCheckingApproval ? 'Checking…' : 'Check Slack approval'}</button>
-            <button className="template-pill bg-lime-300 px-4 py-2.5 text-sm font-semibold text-slate-950 transition-transform hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50" disabled={!runId || stage !== 'approved' || isRecovering} onClick={executeAndVerify}>{isRecovering ? 'Verifying…' : 'Execute & verify'}</button>
-            <button className="template-pill bg-transparent px-4 py-2.5 text-sm font-semibold text-slate-800 hover:bg-white" onClick={() => window.location.reload()}>Reload evidence</button>
+            <button className="premium-action template-pill bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50" disabled={liveStatus === 'loading' || isInspecting} onClick={inspectLiveState}>{isInspecting ? 'Inspecting…' : 'Inspect live state'}</button>
+            <button className="premium-action template-pill bg-amber-400 px-4 py-2.5 text-sm font-semibold text-slate-950 disabled:cursor-not-allowed disabled:opacity-50" disabled={liveStatus !== 'ready' || isRequestingApproval} onClick={requestApproval}>{isRequestingApproval ? 'Requesting…' : 'Request approval in Slack'}</button>
+            <button className="premium-action template-pill bg-white px-4 py-2.5 text-sm font-semibold text-slate-900 disabled:cursor-not-allowed disabled:opacity-50" disabled={!runId || isCheckingApproval} onClick={checkSlackApproval}>{isCheckingApproval ? 'Checking…' : 'Check Slack approval'}</button>
+            <button className="premium-action template-pill bg-lime-300 px-4 py-2.5 text-sm font-semibold text-slate-950 disabled:cursor-not-allowed disabled:opacity-50" disabled={!runId || stage !== 'approved' || isRecovering} onClick={executeAndVerify}>{isRecovering ? 'Verifying…' : 'Execute & verify'}</button>
+            <button className="premium-action template-pill bg-transparent px-4 py-2.5 text-sm font-semibold text-slate-800 hover:bg-white" onClick={() => window.location.reload()}>Reload evidence</button>
             <span className="ml-auto text-xs font-medium text-slate-500">Stage: {stage}</span>
           </div>
           <p className={`mt-3 text-sm ${liveStatus === 'error' ? 'text-red-700' : liveStatus === 'ready' ? 'text-emerald-700' : 'text-slate-500'}`} role="status">{liveMessage}</p>
@@ -304,7 +313,7 @@ export default function HomePage() {
           <p className="mt-2 text-xs text-slate-500">Stripe mutation and final verification are disabled until the approved Stripe recovery endpoint is connected.</p>
         </section>
 
-        <section id="evidence" className="template-panel mt-10 p-6 sm:p-8">
+        <section id="evidence" className="template-panel reveal-on-scroll mt-10 p-6 sm:p-8">
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Original Slack instruction</p>
           <blockquote className="amends-display mt-5 max-w-5xl border-l-4 border-slate-950 pl-5 text-2xl leading-tight text-slate-800 sm:text-3xl">“Launch the Pro 2027 plan at $129 per seat for new customers only. Northstar and every existing enterprise customer stay grandfathered at $99 per seat. Update our pricing policy and confirm when complete.”</blockquote>
         </section>
