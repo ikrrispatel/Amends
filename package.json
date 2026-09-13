@@ -9,9 +9,10 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "security:secrets": "node scripts/scan-secrets.mjs",
-    "test": "tsx --test src/domain/*.test.ts"
+    "test": "node --import tsx --test $(find src -type f -name \"*.test.ts\" | sort)"
   },
   "dependencies": {
+    "better-sqlite3": "12.11.1",
     "next": "16.3.5",
     "react": "19.2.8",
     "react-dom": "19.2.8",
@@ -19,6 +20,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/better-sqlite3": "9.6.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

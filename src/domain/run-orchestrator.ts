@@ -550,7 +550,7 @@ export class RunOrchestrator {
     const message = error instanceof Error ? error.message : 'Unknown failure';
     const code = message.includes('approval') || message.includes('approver') || message.includes('APPROVE')
       ? 'PRECONDITION_FAILED'
-      : message.includes('expired') || message.includes('hash')
+      : message.includes('expired') || message.includes('hash') || message.includes('Duplicate action execution prevented')
         ? 'PRECONDITION_FAILED'
         : message.includes('provider') || message.includes('timeout')
           ? 'TIMEOUT'
