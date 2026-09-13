@@ -6,6 +6,35 @@ Amends is a recovery layer for agentic systems that execute API calls and still 
 
 <!-- Add final dashboard screenshot here -->
 
+## Demo status
+
+The locked recovery scenario has been exercised end-to-end through the Amends dashboard.
+
+**Current verified result:**
+
+- exactly 2 business mismatches detected
+- $2,610/month exposure calculated
+- exact Slack approval required: `APPROVE AMN-2027-0042`
+- recovery executed through the guarded workflow
+- Stripe restored to $99 × 87 seats in the deterministic test path
+- Notion restored to `new_customers_only`
+- existing customers remain at $99 and new customers at $129
+- recovery receipt recorded
+- final state: **VERIFIED 5/5**
+
+The repository validation gate currently passes:
+
+- 53 tests
+- 53 pass
+- 0 fail
+- 0 skipped
+- lint pass
+- TypeScript pass
+- production build pass
+- secret scan pass
+- Neon persistence integration pass
+
+
 ## Problem
 
 A 200 OK response is not evidence that the agent fulfilled the user’s intent.
