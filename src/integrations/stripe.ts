@@ -46,6 +46,7 @@ export type StripeAdapterErrorCode =
   | "INVALID_SUBSCRIPTION_ID"
   | "INVALID_PRICE_ID"
   | "PRECONDITION_FAILED"
+  | "PRORATION_DETECTED"
   | "INVALID_IDEMPOTENCY_KEY";
 
 export class StripeAdapterError extends Error {
@@ -77,6 +78,21 @@ function requireStripeId(
 function requireIdempotencyKey(value: string): void {
   if (!/^[A-Za-z0-9._:-]{16,128}$/.test(value)) {
     throw new StripeAdapterError("INVALID_IDEMPOTENCY_KEY", "Idempotency keys must be stable, non-empty, and bounded.");
+  }
+}
+
+export function verifyNoProration(
+  before: StripeSubscriptionSnapshot,
+  after: StripeSubscriptionSnapshot,
+): void {
+  if (
+    before.subscriptionId !== after.subscriptionId ||
+    before.latestInvoiceId !== after.latestInvoiceId
+  ) {
+    throw new StripeAdapterError(
+      "PRORATION_DETECTED",
+      "Recovery changed the invoice fingerprint; no-proration verification failed.",
+    );
   }
 }
 
@@ -126,6 +142,7 @@ export class StripeAdapter {
       idempotencyKey,
     });
     this.assertTrustedSnapshot(restored, record);
+    verifyNoProration(current, restored);
     return { status: "COMMITTED", snapshot: restored };
   }
 

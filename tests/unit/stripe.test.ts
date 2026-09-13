@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   StripeAdapter,
   StripeAdapterError,
+  verifyNoProration,
   type StripeSubscriptionSnapshot,
   type StripeTestClient,
 } from "../../src/integrations/stripe.js";
@@ -166,5 +167,21 @@ describe("StripeAdapter", () => {
     const adapter = new StripeAdapter(config, client({ updateSubscription }));
     await expect(adapter.restoreGrandfatheredPrice("northstar", wrongSnapshot, "bad")).rejects.toMatchObject({ code: "INVALID_IDEMPOTENCY_KEY" });
     expect(updateSubscription).not.toHaveBeenCalled();
+  });
+
+  it("fails closed when recovery creates a new invoice fingerprint", async () => {
+    const adapter = new StripeAdapter(
+      config,
+      client({
+        updateSubscription: vi.fn(async () => ({ ...restoredSnapshot, latestInvoiceId: "in_new" })),
+      }),
+    );
+    await expect(
+      adapter.restoreGrandfatheredPrice("northstar", wrongSnapshot, "run_demo_stripe_restore_005"),
+    ).rejects.toMatchObject({ code: "PRORATION_DETECTED" });
+  });
+
+  it("accepts an unchanged invoice fingerprint", () => {
+    expect(() => verifyNoProration(wrongSnapshot, restoredSnapshot)).not.toThrow();
   });
 });
