@@ -2,8 +2,9 @@ import Database from "better-sqlite3";
 import { dirname } from "node:path";
 import { mkdirSync } from "node:fs";
 import { z } from "zod";
-import { AuditEventSchema, type AuditEvent } from "../../domain/audit.js";
-import { RunStateSchema, type RunState } from "../../domain/run-states.js";
+
+import { AuditEventSchema, type AuditEvent } from "@/domain/audit";
+import { RunStateSchema, type RunState } from "@/domain/run-states";
 
 const JsonObjectSchema = z.record(z.string(), z.unknown());
 
@@ -36,7 +37,8 @@ export class SqlitePersistence {
 
   constructor(filename = process.env.AMENDS_DATABASE_PATH ?? "./data/amends.sqlite") {
     if (filename !== ":memory:") mkdirSync(dirname(filename), { recursive: true });
-    this.db = new Database(filename);
+    this.db = new Database(filename, { timeout: 30_000 });
+    this.db.pragma("busy_timeout = 30000");
     this.db.pragma("journal_mode = WAL");
     this.db.pragma("foreign_keys = ON");
     this.db.exec(`

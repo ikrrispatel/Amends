@@ -1,8 +1,9 @@
 import { z } from 'zod';
 
 import { FixtureIntentExtractor } from '@/ai/intent-extractor';
-import { InMemoryDemoRunRepository, type DemoRunRecord, type DemoRunRepository } from '@/domain/demo-run-repository';
+import { type DemoRunRecord, type DemoRunRepository } from '@/domain/demo-run-repository';
 import { type ProviderAdapterSet, RunOrchestrator } from '@/domain/run-orchestrator';
+import { SqliteDemoRunRepository } from '@/infrastructure/persistence/sqlite-demo-run-repository';
 
 export const DEMO_INSTRUCTION_TEXT = 'Launch the Pro 2027 plan at $129 per seat for new customers only. Northstar and every existing enterprise customer stay grandfathered at $99 per seat. Update our pricing policy and confirm when complete.';
 export const DEMO_RUN_CODE = 'RUN-123';
@@ -158,13 +159,17 @@ export function makeLocalMockProviderSet(): ProviderAdapterSet {
   };
 }
 
+export function createDefaultDemoRunRepository(): DemoRunRepository {
+  return new SqliteDemoRunRepository(process.env.AMENDS_DATABASE_PATH ?? './data/amends.sqlite');
+}
+
 export function createDemoApiRuntime(overrides?: {
   repository?: DemoRunRepository;
   providers?: ProviderAdapterSet;
   approverUserId?: string;
   defaultRunCode?: string;
 }): DemoApiRuntime {
-  const repository = overrides?.repository ?? new InMemoryDemoRunRepository();
+  const repository = overrides?.repository ?? createDefaultDemoRunRepository();
   const providers = overrides?.providers ?? makeLocalMockProviderSet();
   const approverUserId = overrides?.approverUserId ?? DEMO_APPROVER_USER_ID;
   const defaultRunCode = overrides?.defaultRunCode ?? DEMO_RUN_CODE;
@@ -188,14 +193,33 @@ export function createDemoApiRuntime(overrides?: {
   return runtime;
 }
 
-let activeRuntime: DemoApiRuntime = createDemoApiRuntime();
+let activeRuntime: DemoApiRuntime | undefined;
 
 export function getDemoRuntime(): DemoApiRuntime {
+  if (!activeRuntime) {
+    activeRuntime = createDemoApiRuntime();
+  }
+
   return activeRuntime;
 }
 
 export function resetDemoRuntime(): DemoApiRuntime {
-  activeRuntime = createDemoApiRuntime();
+  if (!activeRuntime) {
+    activeRuntime = createDemoApiRuntime();
+    return activeRuntime;
+  }
+
+  const currentRepository = activeRuntime.repository as DemoRunRepository & { reset?: () => void };
+  if (currentRepository && typeof currentRepository.reset === 'function') {
+    currentRepository.reset();
+  }
+
+  activeRuntime = createDemoApiRuntime({
+    repository: currentRepository,
+    providers: makeLocalMockProviderSet(),
+    approverUserId: activeRuntime.approverUserId,
+    defaultRunCode: activeRuntime.defaultRunCode,
+  });
   return activeRuntime;
 }
 

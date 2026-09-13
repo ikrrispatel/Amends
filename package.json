@@ -9,7 +9,7 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "security:secrets": "node scripts/scan-secrets.mjs",
-    "test": "tsx --test src/**/*.test.ts"
+    "test": "node --import tsx --test $(find src -type f -name \"*.test.ts\" | sort)"
   },
   "dependencies": {
     "better-sqlite3": "12.11.1",
